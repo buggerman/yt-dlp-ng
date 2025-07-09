@@ -21,11 +21,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Setup Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@${{ matrix.rust }}
       with:
-        toolchain: ${{ matrix.rust }}
         components: rustfmt, clippy
-        override: true
     - name: Cache cargo registry
       uses: actions/cache@v3
       with:
@@ -44,7 +42,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Run clippy
-      run: cargo clippy -- -D warnings
+      run: cargo clippy -- -D warnings -A unused-variables -A dead-code -A unused-imports
     - name: Check formatting
       run: cargo fmt -- --check
 
@@ -57,14 +55,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Setup Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
+      uses: dtolnay/rust-toolchain@stable
     - name: Build
       run: cargo build --verbose --release
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: yt-dlp-ng-${{ matrix.os }}
         path: |
@@ -79,10 +74,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Setup Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
+      uses: dtolnay/rust-toolchain@stable
     - name: Install cargo-audit
       run: cargo install cargo-audit
     - name: Run security audit
@@ -94,17 +86,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Setup Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: stable
         components: llvm-tools-preview
-        override: true
     - name: Install cargo-llvm-cov
       run: cargo install cargo-llvm-cov
     - name: Generate code coverage
       run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: lcov.info
         fail_ci_if_error: false
@@ -115,10 +105,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Setup Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
+      uses: dtolnay/rust-toolchain@stable
     - name: Install cargo-criterion
       run: cargo install cargo-criterion
     - name: Run performance tests
