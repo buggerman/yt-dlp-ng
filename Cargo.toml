@@ -2,12 +2,16 @@
 name = "yt-dlp-ng"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
-description = "Modern implementation of yt-dlp with performance improvements"
+authors = ["buggerman"]
+description = "Modern, high-performance implementation of yt-dlp built with Rust"
 repository = "https://github.com/buggerman/yt-dlp-ng"
+homepage = "https://github.com/buggerman/yt-dlp-ng"
+documentation = "https://docs.rs/yt-dlp-ng"
 license = "MIT"
-keywords = ["video", "downloader", "youtube", "media"]
+readme = "README.md"
+keywords = ["video", "downloader", "youtube", "media", "rust"]
 categories = ["command-line-utilities", "multimedia"]
+exclude = ["target/", ".github/", "tests/"]
 
 [[bin]]
 name = "yt-dlp-ng"
