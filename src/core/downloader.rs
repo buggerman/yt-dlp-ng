@@ -15,7 +15,7 @@ pub struct Downloader {
 impl Downloader {
     pub fn new(concurrent_limit: usize) -> Self {
         let client = reqwest::Client::builder()
-            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15,gzip(gfe)")
             .timeout(std::time::Duration::from_secs(30))
             .cookie_store(true)
             .redirect(reqwest::redirect::Policy::limited(10))
@@ -80,12 +80,12 @@ impl Downloader {
         loop {
             attempt += 1;
 
-            // Build request with enhanced anti-detection headers
+            // Build request with Safari-compatible headers to match yt-dlp
             let mut request = self
                 .client
                 .get(&format.url)
                 .header("Accept", "*/*")
-                .header("Accept-Language", "en-US,en;q=0.9")
+                .header("Accept-Language", "en-US,en;q=0.5")
                 .header("Accept-Encoding", "gzip, deflate, br")
                 .header("Cache-Control", "no-cache")
                 .header("Connection", "keep-alive")
@@ -94,17 +94,7 @@ impl Downloader {
                 .header("Origin", "https://www.youtube.com")
                 .header("Sec-Fetch-Dest", "video")
                 .header("Sec-Fetch-Mode", "no-cors")
-                .header("Sec-Fetch-Site", "cross-site")
-                .header(
-                    "Sec-Ch-Ua",
-                    "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
-                )
-                .header("Sec-Ch-Ua-Mobile", "?0")
-                .header("Sec-Ch-Ua-Platform", "\"Windows\"")
-                .header("Upgrade-Insecure-Requests", "1")
-                .header("X-Client-Data", "CgSLywE=")
-                .header("X-Youtube-Client-Name", "1")
-                .header("X-Youtube-Client-Version", "2.20231201.00.00");
+                .header("Sec-Fetch-Site", "cross-site");
 
             if let Some(resume_pos) = resume_from {
                 request = request.header("Range", format!("bytes={}-", resume_pos));

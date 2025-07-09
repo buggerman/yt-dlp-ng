@@ -1,0 +1,54 @@
+[2m2025-07-09T19:31:05.332154Z[0m [32m INFO[0m [2myt_dlp_ng[0m[2m:[0m Starting yt-dlp-ng v0.1.0
+Downloading: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+Output directory: .
+Format: best
+Extracting video information...
+[2m2025-07-09T19:31:05.336162Z[0m [34mDEBUG[0m [2mreqwest::connect[0m[2m:[0m starting new connection: https://www.youtube.com/    
+[2m2025-07-09T19:31:05.338348Z[0m [34mDEBUG[0m [2mhyper_util::client::legacy::connect::http[0m[2m:[0m connecting to 142.250.74.110:443
+[2m2025-07-09T19:31:05.352245Z[0m [34mDEBUG[0m [2mhyper_util::client::legacy::connect::http[0m[2m:[0m connected to 142.250.74.110:443
+[2m2025-07-09T19:31:05.473177Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m inserting secure cookie 'YSC'    
+[2m2025-07-09T19:31:05.473292Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m inserting secure cookie '__Secure-YEC'    
+[2m2025-07-09T19:31:05.473323Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m inserting secure cookie 'VISITOR_PRIVACY_METADATA'    
+[2m2025-07-09T19:31:05.473347Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m inserting secure cookie 'VISITOR_INFO1_LIVE'    
+[2m2025-07-09T19:31:05.473359Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m unable to store Set-Cookie: Expired    
+[2m2025-07-09T19:31:05.473377Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m inserting secure cookie 'YSC'    
+[2m2025-07-09T19:31:05.473401Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m inserting secure cookie '__Secure-YEC'    
+[2m2025-07-09T19:31:05.473426Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m inserting secure cookie 'VISITOR_PRIVACY_METADATA'    
+[2m2025-07-09T19:31:05.473448Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m inserting secure cookie 'VISITOR_INFO1_LIVE'    
+[2m2025-07-09T19:31:05.473458Z[0m [34mDEBUG[0m [2mcookie_store::cookie_store[0m[2m:[0m unable to store Set-Cookie: Expired    
+[2m2025-07-09T19:31:06.300375Z[0m [34mDEBUG[0m [2mhyper_util::client::legacy::pool[0m[2m:[0m pooling idle connection for ("https", www.youtube.com)
+[2m2025-07-09T19:31:06.350514Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Found 26 adaptive formats to check
+[2m2025-07-09T19:31:06.350564Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 313 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350573Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 401 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350582Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 271 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350589Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 400 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350595Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 137 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350601Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 248 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350609Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 399 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350615Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 136 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350620Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 247 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350626Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 398 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350631Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 135 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350636Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 244 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350651Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 397 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350656Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 134 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350661Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 243 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350665Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 396 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350670Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 133 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350674Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 242 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350678Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 395 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350683Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 160 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350687Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 278 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350691Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 394 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350696Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 140 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350700Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 249 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350705Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 250 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350709Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Format 251 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350714Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Found 1 regular formats to check
+[2m2025-07-09T19:31:06.350719Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Regular format 18 has no direct URL - requires signature decryption
+[2m2025-07-09T19:31:06.350732Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m Direct extraction failed, trying JS-based signature decryption
+[2m2025-07-09T19:31:06.352124Z[0m [34mDEBUG[0m [2mhyper_util::client::legacy::pool[0m[2m:[0m reuse idle connection for ("https", www.youtube.com)
+[2m2025-07-09T19:31:06.370866Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m JavaScript response status: 200 OK
+[2m2025-07-09T19:31:06.370890Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m JavaScript response headers: {"accept-ranges": "bytes", "content-encoding": "br", "access-control-allow-origin": "https://www.youtube.com", "cross-origin-resource-policy": "cross-origin", "cross-origin-opener-policy-report-only": "same-origin; report-to=\"youtube\"", "report-to": "{\"group\":\"youtube\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/youtube\"}]}", "content-length": "674935", "x-content-type-options": "nosniff", "server": "sffe", "x-xss-protection": "0", "date": "Wed, 09 Jul 2025 19:01:56 GMT", "expires": "Thu, 09 Jul 2026 19:01:56 GMT", "cache-control": "public, max-age=31536000", "last-modified": "Tue, 08 Jul 2025 04:11:37 GMT", "content-type": "text/javascript", "vary": "Accept-Encoding, Origin", "age": "1750", "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"}
+[2m2025-07-09T19:31:06.430176Z[0m [34mDEBUG[0m [2mhyper_util::client::legacy::pool[0m[2m:[0m pooling idle connection for ("https", www.youtube.com)
+[2m2025-07-09T19:31:06.484692Z[0m [34mDEBUG[0m [2myt_dlp_ng::extractors::youtube[0m[2m:[0m JavaScript content length: 1224063

@@ -1,11 +1,13 @@
 use anyhow::Result;
 use regex::Regex;
 use std::collections::HashMap;
+use crate::extractors::js_interpreter::JSInterpreter;
 
 /// YouTube signature decryption based on yt-dlp's approach
-/// This implementation is inspired by yt-dlp's javascript signature decryption
+/// This implementation uses rquickjs to execute actual JavaScript signature functions
 pub struct SignatureDecrypter {
     transform_cache: HashMap<String, Vec<TransformOp>>,
+    js_interpreter: Option<JSInterpreter>,
 }
 
 #[derive(Debug, Clone)]
@@ -19,11 +21,40 @@ impl SignatureDecrypter {
     pub fn new() -> Self {
         Self {
             transform_cache: HashMap::new(),
+            js_interpreter: None,
         }
+    }
+    
+    /// Initialize the JavaScript interpreter with player code
+    pub fn init_js_interpreter(&mut self, js_code: String) -> Result<()> {
+        let interpreter = JSInterpreter::new(js_code)?;
+        self.js_interpreter = Some(interpreter);
+        Ok(())
     }
 
     pub fn decrypt_signature(&mut self, signature: &str, js_content: &str) -> Result<String> {
-        // Extract the signature function name and operations
+        // Try to use JavaScript interpreter first
+        if let Some(ref interpreter) = self.js_interpreter {
+            if let Ok(function_name) = self.find_signature_function_name(js_content) {
+                // Extract global variables
+                let globals = interpreter.extract_global_vars().unwrap_or_default();
+                
+                // Try to execute the actual signature function
+                match interpreter.decrypt_signature(&function_name, signature, Some(globals)) {
+                    Ok(result) => {
+                        tracing::debug!("JavaScript signature decryption successful: {} -> {}", signature, result);
+                        return Ok(result);
+                    }
+                    Err(e) => {
+                        tracing::warn!("JavaScript signature decryption failed: {}", e);
+                        // Fall back to pattern-based approach
+                    }
+                }
+            }
+        }
+        
+        // Fallback to pattern-based signature decryption
+        tracing::debug!("Using fallback pattern-based signature decryption");
         let operations = self.extract_signature_operations(js_content)?;
 
         // Apply operations to the signature
@@ -50,6 +81,48 @@ impl SignatureDecrypter {
         Ok(sig_chars.into_iter().collect())
     }
 
+    /// Decrypt the n-sig parameter to prevent throttling
+    /// This is critical for working YouTube downloads
+    pub fn decrypt_nsig(&mut self, nsig: &str, js_content: &str) -> Result<String> {
+        // Try to use JavaScript interpreter for n-sig decryption
+        if let Some(ref interpreter) = self.js_interpreter {
+            // Look for n-sig function patterns
+            let nsig_patterns = [
+                r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*function\s*\([^)]*\)\s*\{[^}]*\.get\([^)]*\)\s*\&\&[^}]*\}",
+                r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*function\s*\([^)]*\)\s*\{.*?enhanced_except.*?\}",
+                r#"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*function\s*\([^)]*\)\s*\{.*?\.join\(\s*""\s*\).*?\}"#,
+            ];
+            
+            for pattern in &nsig_patterns {
+                if let Ok(re) = Regex::new(pattern) {
+                    if let Some(captures) = re.captures(js_content) {
+                        if let Some(func_name) = captures.get(1) {
+                            let function_name = func_name.as_str();
+                            
+                            // Extract global variables
+                            let globals = interpreter.extract_global_vars().unwrap_or_default();
+                            
+                            // Try to execute the n-sig function
+                            match interpreter.decrypt_signature(function_name, nsig, Some(globals)) {
+                                Ok(result) => {
+                                    tracing::debug!("JavaScript n-sig decryption successful: {} -> {}", nsig, result);
+                                    return Ok(result);
+                                }
+                                Err(e) => {
+                                    tracing::warn!("JavaScript n-sig decryption failed for {}: {}", function_name, e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Fallback: just return the original n-sig
+        tracing::debug!("n-sig passthrough: {}", nsig);
+        Ok(nsig.to_string())
+    }
+
     fn extract_signature_operations(&mut self, js_content: &str) -> Result<Vec<TransformOp>> {
         // This is a simplified version of yt-dlp's signature extraction
         // In reality, yt-dlp has much more sophisticated JS parsing
@@ -67,32 +140,53 @@ impl SignatureDecrypter {
     }
 
     fn find_signature_function_name(&self, js_content: &str) -> Result<String> {
-        // Based on yt-dlp's patterns - try more comprehensive signatures
+        // Based on yt-dlp's actual patterns from line 2133-2145 in _video.py
         let patterns = [
-            // Standard signature patterns from yt-dlp
-            r#"\.sig\|\|([a-zA-Z_\$][\w\$]*)\("#,
-            r#"\.signature\|\|([a-zA-Z_\$][\w\$]*)\("#, 
-            r#"yt\.akamaized\.net/\)\s*\|\|\s*.*?\s*[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*([a-zA-Z_\$][\w\$]*)\("#,
-            r#"\.get\("n"\)\)\s*&&\s*\([^)]*\s*=\s*([a-zA-Z_\$][\w\$]*)\[0\]"#,
-            r#"\bc\s*&&\s*[a-z]\.set\([^,]+,\s*encodeURIComponent\s*\(\s*([a-zA-Z_\$][\w\$]*)\("#,
-            r#"\bc\s*&&\s*[a-z]\.set\([^,]+,\s*([a-zA-Z_\$][\w\$]*)\("#,
-            r#"([a-zA-Z_\$][\w\$]*)\s*=\s*function\s*\([^)]*\)\s*\{[^}]*\.split\(['""]['"']\)"#,
-            r#"\.sig\|\|([a-zA-Z_\$][\w\$]*)\("#,
-            r#"\.signature\|\|([a-zA-Z_\$][\w\$]*)\("#,
+            // Main pattern for decodeURIComponent signature functions
+            r#"\b(?P<var>[a-zA-Z0-9_$]+)&&\((?P=var)=(?P<sig>[a-zA-Z0-9_$]{2,})\(decodeURIComponent\((?P=var)\)\)"#,
+            // Function with split pattern 
+            r#"(?P<sig>[a-zA-Z0-9_$]+)\s*=\s*function\(\s*(?P<arg>[a-zA-Z0-9_$]+)\s*\)\s*\{\s*(?P=arg)\s*=\s*(?P=arg)\.split\(\s*""\s*\)\s*;\s*[^}]+;\s*return\s+(?P=arg)\.join\(\s*""\s*\)"#,
+            // Function with a parameter
+            r#"(?:\b|[^a-zA-Z0-9_$])(?P<sig>[a-zA-Z0-9_$]{2,})\s*=\s*function\(\s*a\s*\)\s*\{\s*a\s*=\s*a\.split\(\s*""\s*\)(?:;[a-zA-Z0-9_$]{2}\.[a-zA-Z0-9_$]{2}\(a,\d+\))?"#,
+            // Old patterns with set and encodeURIComponent
+            r#"\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\("#,
+            r#"\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\("#,
+            r#"\bm=(?P<sig>[a-zA-Z0-9$]{2,})\(decodeURIComponent\(h\.s\)\)"#,
+            // Obsolete patterns
+            r#"("|\')signature\1\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\("#,
+            r#"\.sig\|\|(?P<sig>[a-zA-Z0-9$]+)\("#,
+            r#"yt\.akamaized\.net/\)\s*\|\|\s*.*?\s*[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?:encodeURIComponent\s*\()?\s*(?P<sig>[a-zA-Z0-9$]+)\("#,
+            r#"\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\("#,
+            r#"\bc\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\("#,
         ];
 
         for pattern in &patterns {
             if let Ok(re) = Regex::new(pattern) {
                 if let Some(captures) = re.captures(js_content) {
-                    if let Some(func_name) = captures.get(1) {
+                    if let Some(func_name) = captures.name("sig") {
                         let name = func_name.as_str().to_string();
-                        tracing::debug!("Found potential signature function: {}", name);
+                        tracing::debug!("Found signature function: {}", name);
                         return Ok(name);
                     }
                 }
             }
         }
 
+        // Debug: Let's see what functions are actually available in the JavaScript
+        tracing::debug!("Trying to find signature function in JavaScript content...");
+        
+        // Look for any function definitions to help debug
+        let func_pattern = r"function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(";
+        if let Ok(re) = Regex::new(func_pattern) {
+            let mut functions = Vec::new();
+            for captures in re.captures_iter(js_content).take(10) {
+                if let Some(func_name) = captures.get(1) {
+                    functions.push(func_name.as_str());
+                }
+            }
+            tracing::debug!("Found functions in JS: {:?}", functions);
+        }
+        
         // Fallback: just return a dummy function name to avoid hard failure
         tracing::warn!("Could not find signature function name, using fallback");
         Ok("dummyFunction".to_string())

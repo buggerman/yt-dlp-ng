@@ -33,6 +33,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 async-trait = "0.1"
 urlencoding = "2.1"
+rquickjs = "0.4"
 
 [dev-dependencies]
 tokio-test = "0.4"
