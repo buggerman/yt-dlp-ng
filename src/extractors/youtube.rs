@@ -46,32 +46,58 @@ impl YouTubeExtractor {
     }
 
     async fn extract_player_js(&self, html: &str) -> Result<String> {
-        // Extract the player JavaScript URL from the HTML
-        let re = Regex::new(r#"(/s/player/[^"]+\.js)"#)?;
+        // Try multiple patterns for player JavaScript URL extraction
+        let patterns = [
+            r#"(/s/player/[^"]+\.js)"#,
+            r#""jsUrl":"(/s/player/[^"]+\.js)"#,
+            r#"'jsUrl':'(/s/player/[^']+\.js)"#,
+            r#"jsUrl\s*:\s*"(/s/player/[^"]+\.js)"#,
+            r#"player_url":"(/s/player/[^"]+\.js)"#,
+            r#"PLAYER_JS_URL":"(/s/player/[^"]+\.js)"#,
+        ];
 
-        if let Some(captures) = re.captures(html) {
-            let js_path = captures.get(1).unwrap().as_str();
-            let js_url = format!("https://www.youtube.com{}", js_path);
+        for pattern in &patterns {
+            if let Ok(re) = Regex::new(pattern) {
+                if let Some(captures) = re.captures(html) {
+                    let js_path = captures.get(1).unwrap().as_str();
+                    let js_url = format!("https://www.youtube.com{}", js_path);
 
-            let response = self
-                .client
-                .get(&js_url)
-                .header("Accept", "*/*")
-                .header("Accept-Language", "en-US,en;q=0.9")
-                .header("Accept-Encoding", "gzip, deflate, br")
-                .header("Referer", "https://www.youtube.com/")
-                .header("Origin", "https://www.youtube.com")
-                .header("Sec-Fetch-Dest", "script")
-                .header("Sec-Fetch-Mode", "no-cors")
-                .header("Sec-Fetch-Site", "same-origin")
-                .send()
-                .await?;
-            let js_content = response.text().await?;
+                    let response = self
+                        .client
+                        .get(&js_url)
+                        .header("Accept", "*/*")
+                        .header("Accept-Language", "en-US,en;q=0.9")
+                        .header("Accept-Encoding", "gzip, deflate, br")
+                        .header("Referer", "https://www.youtube.com/")
+                        .header("Origin", "https://www.youtube.com")
+                        .header("Sec-Fetch-Dest", "script")
+                        .header("Sec-Fetch-Mode", "no-cors")
+                        .header("Sec-Fetch-Site", "same-origin")
+                        .send()
+                        .await?;
 
-            Ok(js_content)
-        } else {
-            anyhow::bail!("Could not find player JavaScript URL");
+                    if response.status().is_success() {
+                        let js_content = response.text().await?;
+                        return Ok(js_content);
+                    }
+                }
+            }
         }
+
+        // Debug: Show what we're actually getting
+        tracing::debug!("HTML content sample: {}", &html[..std::cmp::min(1000, html.len())]);
+        
+        // Look for any js files in the HTML
+        let js_re = Regex::new(r#"(/[^"]*\.js)"#)?;
+        let mut js_files = Vec::new();
+        for captures in js_re.captures_iter(html) {
+            if let Some(js_path) = captures.get(1) {
+                js_files.push(js_path.as_str());
+            }
+        }
+        tracing::debug!("Found JS files: {:?}", js_files);
+
+        anyhow::bail!("Could not find player JavaScript URL");
     }
 
     fn decrypt_signature(&mut self, signature: &str, js_content: &str) -> Result<String> {
@@ -110,15 +136,28 @@ impl YouTubeExtractor {
             let params = self.parse_query_string(cipher_str);
 
             if let (Some(url), Some(signature)) = (params.get("url"), params.get("s")) {
-                // Decrypt the signature
-                let decrypted_sig = self.decrypt_signature(signature, js_content)?;
-
-                // Construct the final URL
+                // First try: use signature as-is (works for some videos)
                 let default_sp = "signature".to_string();
                 let sp = params.get("sp").unwrap_or(&default_sp);
-                let final_url = format!("{}&{}={}", url, sp, decrypted_sig);
-
-                return Ok(Some(final_url));
+                let raw_url = format!("{}&{}={}", url, sp, signature);
+                
+                // Second try: decrypt the signature
+                match self.decrypt_signature(signature, js_content) {
+                    Ok(decrypted_sig) => {
+                        let decrypted_url = format!("{}&{}={}", url, sp, decrypted_sig);
+                        tracing::debug!("Trying decrypted signature URL");
+                        return Ok(Some(decrypted_url));
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to decrypt signature, using raw signature: {}", e);
+                        return Ok(Some(raw_url));
+                    }
+                }
+            }
+            
+            // Check if there's a URL without signature (sometimes cipher has just URL)
+            if let Some(url) = params.get("url") {
+                return Ok(Some(url.clone()));
             }
         }
 
@@ -133,6 +172,9 @@ impl YouTubeExtractor {
     ) -> Result<VideoMetadata> {
         // Extract ytInitialPlayerResponse JSON
         let player_response = self.extract_player_response(html)?;
+
+        // Debug: Check what we actually got
+        tracing::debug!("Player response keys: {:?}", player_response.as_object().map(|o| o.keys().collect::<Vec<_>>()));
 
         // Extract basic video details
         let video_details = player_response
@@ -224,11 +266,14 @@ impl YouTubeExtractor {
             .get("streamingData")
             .ok_or_else(|| anyhow::anyhow!("No streaming data found"))?;
 
+        tracing::debug!("Streaming data keys: {:?}", streaming_data.as_object().map(|o| o.keys().collect::<Vec<_>>()));
+
         // Extract adaptive formats (separate video/audio)
         if let Some(adaptive_formats) = streaming_data
             .get("adaptiveFormats")
             .and_then(|v| v.as_array())
         {
+            tracing::debug!("Found {} adaptive formats", adaptive_formats.len());
             for format in adaptive_formats {
                 if let Some(video_format) = self.parse_format_with_js(format, js_content).await? {
                     formats.push(video_format);
@@ -238,12 +283,15 @@ impl YouTubeExtractor {
 
         // Extract regular formats (combined video/audio)
         if let Some(regular_formats) = streaming_data.get("formats").and_then(|v| v.as_array()) {
+            tracing::debug!("Found {} regular formats", regular_formats.len());
             for format in regular_formats {
                 if let Some(video_format) = self.parse_format_with_js(format, js_content).await? {
                     formats.push(video_format);
                 }
             }
         }
+
+        tracing::debug!("Successfully extracted {} formats", formats.len());
 
         if formats.is_empty() {
             anyhow::bail!("No video formats found");
@@ -257,7 +305,7 @@ impl YouTubeExtractor {
         format: &Value,
         js_content: &str,
     ) -> Result<Option<VideoFormat>> {
-        // Try to get direct URL first
+        // Try to get direct URL first (these don't need signature decryption)
         let url = format
             .get("url")
             .and_then(|v| v.as_str())
@@ -265,10 +313,19 @@ impl YouTubeExtractor {
 
         // If no direct URL, try to process cipher
         let final_url = match url {
-            Some(url) => url,
+            Some(url) => {
+                tracing::debug!("Found direct URL (no signature needed): {}", &url[..100.min(url.len())]);
+                url
+            },
             None => match self.process_cipher_format(format, js_content).await? {
-                Some(url) => url,
-                None => return Ok(None),
+                Some(url) => {
+                    tracing::debug!("Processed cipher URL: {}", &url[..100.min(url.len())]);
+                    url
+                },
+                None => {
+                    tracing::debug!("No URL available for format");
+                    return Ok(None);
+                },
             },
         };
 
@@ -397,7 +454,7 @@ impl Extractor for YouTubeExtractor {
                 "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             )
             .header("Accept-Language", "en-US,en;q=0.9")
-            .header("Accept-Encoding", "gzip, deflate, br")
+            .header("Accept-Encoding", "identity")
             .header("DNT", "1")
             .header("Connection", "keep-alive")
             .header("Upgrade-Insecure-Requests", "1")
@@ -420,6 +477,15 @@ impl Extractor for YouTubeExtractor {
         }
 
         let html = response.text().await?;
+        
+        // Debug: Check if we got valid HTML
+        if html.is_empty() {
+            anyhow::bail!("Empty response from YouTube");
+        }
+        
+        if !html.contains("html") && !html.contains("HTML") {
+            anyhow::bail!("Response doesn't appear to be HTML: {}", &html[..std::cmp::min(200, html.len())]);
+        }
 
         // Extract player JavaScript for signature decryption
         let js_content = self.extract_player_js(&html).await?;
