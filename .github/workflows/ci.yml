@@ -65,7 +65,7 @@ jobs:
     - name: Build
       run: cargo build --verbose --release
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: yt-dlp-ng-${{ matrix.os }}
         path: |
