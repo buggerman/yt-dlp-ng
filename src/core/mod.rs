@@ -4,4 +4,4 @@ pub mod metadata;
 
 pub use downloader::Downloader;
 pub use extractor::{Extractor, ExtractorEngine};
-pub use metadata::{VideoMetadata, VideoFormat, Thumbnail};
+pub use metadata::{Thumbnail, VideoFormat, VideoMetadata};

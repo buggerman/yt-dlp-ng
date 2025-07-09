@@ -22,20 +22,20 @@ impl ExtractorEngine {
             ],
         }
     }
-    
+
     pub fn register_extractor(&mut self, extractor: Box<dyn Extractor>) {
         self.extractors.push(extractor);
     }
-    
+
     pub async fn extract(&mut self, url: &str) -> Result<VideoMetadata> {
         let parsed_url = Url::parse(url)?;
-        
+
         for extractor in &mut self.extractors {
             if extractor.suitable(&parsed_url) {
                 return extractor.extract(&parsed_url).await;
             }
         }
-        
+
         anyhow::bail!("No suitable extractor found for URL: {}", url);
     }
 }

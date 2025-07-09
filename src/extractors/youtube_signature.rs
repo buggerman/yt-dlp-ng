@@ -25,10 +25,10 @@ impl SignatureDecrypter {
     pub fn decrypt_signature(&mut self, signature: &str, js_content: &str) -> Result<String> {
         // Extract the signature function name and operations
         let operations = self.extract_signature_operations(js_content)?;
-        
+
         // Apply operations to the signature
         let mut sig_chars: Vec<char> = signature.chars().collect();
-        
+
         for op in operations {
             match op {
                 TransformOp::Reverse => {
@@ -46,23 +46,23 @@ impl SignatureDecrypter {
                 }
             }
         }
-        
+
         Ok(sig_chars.into_iter().collect())
     }
 
     fn extract_signature_operations(&mut self, js_content: &str) -> Result<Vec<TransformOp>> {
         // This is a simplified version of yt-dlp's signature extraction
         // In reality, yt-dlp has much more sophisticated JS parsing
-        
+
         // Find the signature function
         let sig_func_name = self.find_signature_function_name(js_content)?;
-        
+
         // Extract the transform object name
         let transform_obj_name = self.find_transform_object_name(js_content, &sig_func_name)?;
-        
+
         // Extract the operations from the transform object
         let operations = self.extract_transform_operations(js_content, &transform_obj_name)?;
-        
+
         Ok(operations)
     }
 
@@ -73,7 +73,7 @@ impl SignatureDecrypter {
             r#"([a-zA-Z_\$][a-zA-Z_0-9]*)\s*=\s*function\s*\([^)]*\)\s*\{[^}]*\.split\(\s*['"]\s*["']\s*\)"#,
             r#"([a-zA-Z_\$][a-zA-Z_0-9]*)\s*=\s*function\s*\([^)]*\)\s*\{[^}]*\.reverse\(\)"#,
         ];
-        
+
         for pattern in &patterns {
             if let Ok(re) = Regex::new(pattern) {
                 if let Some(captures) = re.captures(js_content) {
@@ -83,14 +83,17 @@ impl SignatureDecrypter {
                 }
             }
         }
-        
+
         anyhow::bail!("Could not find signature function name");
     }
 
     fn find_transform_object_name(&self, js_content: &str, sig_func_name: &str) -> Result<String> {
         // Look for the transform object referenced in the signature function
-        let pattern = format!(r#"{}=function\([^)]*\)\{{[^}}]*?([a-zA-Z_\$][a-zA-Z_0-9]*)\."#, regex::escape(sig_func_name));
-        
+        let pattern = format!(
+            r#"{}=function\([^)]*\)\{{[^}}]*?([a-zA-Z_\$][a-zA-Z_0-9]*)\."#,
+            regex::escape(sig_func_name)
+        );
+
         if let Ok(re) = Regex::new(&pattern) {
             if let Some(captures) = re.captures(js_content) {
                 if let Some(obj_name) = captures.get(1) {
@@ -98,25 +101,35 @@ impl SignatureDecrypter {
                 }
             }
         }
-        
+
         anyhow::bail!("Could not find transform object name");
     }
 
-    fn extract_transform_operations(&self, js_content: &str, transform_obj_name: &str) -> Result<Vec<TransformOp>> {
+    fn extract_transform_operations(
+        &self,
+        js_content: &str,
+        transform_obj_name: &str,
+    ) -> Result<Vec<TransformOp>> {
         // This is a simplified extraction - yt-dlp has much more complex logic
         let mut operations = Vec::new();
-        
+
         // Look for the transform object definition
-        let obj_pattern = format!(r#"var\s+{}\s*=\s*\{{([^}}]+)\}}"#, regex::escape(transform_obj_name));
-        
+        let obj_pattern = format!(
+            r#"var\s+{}\s*=\s*\{{([^}}]+)\}}"#,
+            regex::escape(transform_obj_name)
+        );
+
         if let Ok(re) = Regex::new(&obj_pattern) {
             if let Some(captures) = re.captures(js_content) {
                 if let Some(obj_body) = captures.get(1) {
                     // Parse the object methods
-                    let method_re = Regex::new(r#"([a-zA-Z_\$][a-zA-Z_0-9]*):function\([^)]*\)\{([^}]+)\}"#)?;
-                    
+                    let method_re =
+                        Regex::new(r#"([a-zA-Z_\$][a-zA-Z_0-9]*):function\([^)]*\)\{([^}]+)\}"#)?;
+
                     for method_match in method_re.captures_iter(obj_body.as_str()) {
-                        if let (Some(method_name), Some(method_body)) = (method_match.get(1), method_match.get(2)) {
+                        if let (Some(method_name), Some(method_body)) =
+                            (method_match.get(1), method_match.get(2))
+                        {
                             let op = self.parse_transform_method(method_body.as_str())?;
                             operations.push(op);
                         }
@@ -124,14 +137,14 @@ impl SignatureDecrypter {
                 }
             }
         }
-        
+
         if operations.is_empty() {
             // Fallback: assume common operations
             operations.push(TransformOp::Reverse);
             operations.push(TransformOp::Splice(1));
             operations.push(TransformOp::Swap(39));
         }
-        
+
         Ok(operations)
     }
 
@@ -174,10 +187,10 @@ mod tests {
     #[test]
     fn test_signature_decryption_basic() {
         let mut decrypter = SignatureDecrypter::new();
-        
+
         // Test basic operations
         let test_signature = "abcdefghijklmnop";
-        
+
         // Mock JS content that would produce reverse operation
         let mock_js = r#"
         var Aaa = {
@@ -185,7 +198,7 @@ mod tests {
         };
         var ccc = function(a) { return Aaa.bbb(a); };
         "#;
-        
+
         // This is a simplified test - real implementation would be more complex
         let result = decrypter.decrypt_signature(test_signature, mock_js);
         // For now, we expect it to fail since we don't have complete JS parsing
@@ -196,18 +209,18 @@ mod tests {
     #[test]
     fn test_transform_operations() {
         let mut decrypter = SignatureDecrypter::new();
-        
+
         // Test individual operations
         let mut chars: Vec<char> = "abcdef".chars().collect();
-        
+
         // Test reverse
         chars.reverse();
         assert_eq!(chars.iter().collect::<String>(), "fedcba");
-        
+
         // Test splice
         chars.remove(1);
         assert_eq!(chars.iter().collect::<String>(), "fdcba");
-        
+
         // Test swap
         chars.swap(0, 2);
         assert_eq!(chars.iter().collect::<String>(), "cdfba");

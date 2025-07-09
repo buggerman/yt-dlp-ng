@@ -19,7 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
-reqwest = { version = "0.11", features = ["json", "stream", "cookies"] }
+reqwest = { version = "0.12", features = ["json", "stream", "cookies"] }
 clap = { version = "4.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
