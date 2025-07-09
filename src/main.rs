@@ -13,14 +13,14 @@ use cli::Cli;
 async fn main() -> anyhow::Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
-    
+
     // Parse command line arguments
     let cli = Cli::parse();
-    
+
     info!("Starting yt-dlp-ng v{}", env!("CARGO_PKG_VERSION"));
-    
+
     // Handle the command
     cli.run().await?;
-    
+
     Ok(())
 }
