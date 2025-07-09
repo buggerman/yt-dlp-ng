@@ -98,7 +98,6 @@ jobs:
       with:
         toolchain: stable
         override: true
-      with:
         components: llvm-tools-preview
     - name: Install cargo-llvm-cov
       run: cargo install cargo-llvm-cov
