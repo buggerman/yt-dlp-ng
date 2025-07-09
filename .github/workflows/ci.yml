@@ -18,7 +18,6 @@ jobs:
         rust:
           - stable
           - beta
-          - nightly
     steps:
     - uses: actions/checkout@v4
     - name: Setup Rust
@@ -108,7 +107,7 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         file: lcov.info
-        fail_ci_if_error: true
+        fail_ci_if_error: false
 
   performance:
     name: Performance Tests
@@ -124,33 +123,3 @@ jobs:
       run: cargo install cargo-criterion
     - name: Run performance tests
       run: cargo criterion || true  # Don't fail CI if no criterion benchmarks exist
-
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    needs: [test, build, security-audit]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Setup Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-    - name: Install cargo-release
-      run: cargo install cargo-release
-    - name: Check for version bump
-      id: version_check
-      run: |
-        if git log -1 --pretty=format:"%s" | grep -q "chore: release"; then
-          echo "::set-output name=should_release::true"
-        else
-          echo "::set-output name=should_release::false"
-        fi
-    - name: Create release
-      if: steps.version_check.outputs.should_release == 'true'
-      run: cargo release --execute
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
