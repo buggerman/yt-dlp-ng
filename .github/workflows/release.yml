@@ -15,7 +15,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -47,7 +47,7 @@ jobs:
             target: aarch64-apple-darwin
             name: yt-dlp-ng-macos-aarch64
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
       with:
@@ -90,7 +90,7 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
       with:
